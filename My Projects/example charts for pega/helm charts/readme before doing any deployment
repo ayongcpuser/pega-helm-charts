@@ -1,0 +1,54 @@
+docker login pega-docker.downloads.pega.com --username=reg-599036 --password AKCp8hzXve6WxfCEWEdVfMyeNmWYG95emk1Yh2FrDGwsHXNxPj1CLFamynyybQfShws9zTope
+
+
+
+docker tag pega-docker.downloads.pega.com/platform/pega:8.6.2 kubeanzregistry.azurecr.io/new-pega:8.6.2
+docker tag pega-docker.downloads.pega.com/platform/search:8.6.2 kubeanzregistry.azurecr.io/new-search:8.6.2
+docker tag pega-docker.downloads.pega.com/platform/installer:8.6.2 kubeanzregistry.azurecr.io/new-installer:8.6.2
+docker tag pega-docker.downloads.pega.com/platform-services/search-n-reporting-service:1.17.10 kubeanzregistry.azurecr.io/search-n-reporting-service:1.17.10
+
+docker push kubeanzregistry.azurecr.io/new-pega:8.6.2
+docker push kubeanzregistry.azurecr.io/new-search:8.6.2
+docker push kubeanzregistry.azurecr.io/new-installer:8.6.2
+docker push kubeanzregistry.azurecr.io/search-n-reporting-service:1.17.10
+
+
+
+[root@ip-170-0-1-202 pega_helm]# make es-prerequisite NAMESPACE=newpega
+
+oc adm policy add-scc-to-user anyuid system:serviceaccount:newpega:default
+
+helm install mybackingservices pega/backingservices --namespace newpega --values backingservices.yaml
+
+helm install mypega pega/pega --namespace newpega --values pega.yaml
+
+
+helm delete mypega -n newpega
+
+==== Before running pega deployment few things to note Specifically on OpenShift ===
+
+1. check the api service URL of your cluster ( in our case it is https://api.pega.naairbg.com:6443 ): So our ingress domains pf stream & web tier would be containing the cluster details such as :
+
+        #  e.g. web.mypega.example.com
+        domain: "newweb.apps.pega.naairbg.com"
+		&
+		        #  e.g. web.mypega.example.com
+        domain: "newstream.apps.pega.naairbg.com"
+		
+2. To run a minimul deployment ( not occuping the entire cluster memory ) : To do that we need to specify resource limits under each tier.
+
+
+      replicas: 1
+      cpuRequest: 1
+      memRequest: "4Gi"
+      cpuLimit: 2
+      memLimit: "8Gi"
+      initialHeap: "3072m"
+      maxHeap: "7168m"
+
+3. We must face a kafka log creation issue if we don't consider the security context part : to do so we must set runasuser: 0(ROOT) : If we don't we will be facing """/usr/kafka/data : not enough priviledge to create the data """ error: Best practice to run each tier with root proviledge. 
+      # See, https://github.com/pegasystems/pega-helm-charts/blob/master/charts/pega/README.md#security-context
+      securityContext:
+        runAsUser: 0
+		
+4. Last but not the least, we need to run the """oc adm policy add-scc-to-user anyuid system:serviceaccount:<namespace>:default""" command to set the scc on our namespace 

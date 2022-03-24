@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Install addons Chart
+      kubernetes.core.helm:
+       name: myaddons
+       release_namespace: demopega
+       chart_ref: pega/addons
+       values_files:
+        - /path to value.yaml

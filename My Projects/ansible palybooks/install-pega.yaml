@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Install pega/pega Chart
+      kubernetes.core.helm:
+       name: mypega
+       release_namespace: demopega
+       chart_ref: pega/pega
+       values_files:
+        - /path to value.yaml

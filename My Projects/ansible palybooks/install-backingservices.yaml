@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Install backingserices Chart
+      kubernetes.core.helm:
+       name: mybackingservices
+       release_namespace: demopega
+       create_namespace: true
+       chart_ref: pega/backingservices
+       values_files:
+        - /path to value.yaml
+

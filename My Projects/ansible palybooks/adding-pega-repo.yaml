@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  vars:
+     helm_chart_url: "https://pegasystems.github.io/pega-helm-charts"
+  tasks:
+    - name: Add pega chart repo
+      kubernetes.core.helm_repository:
+       name: pega
+       repo_url: "{{ helm_chart_url }}"
